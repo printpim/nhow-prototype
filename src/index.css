@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Brand surfaces */
+    --background: 40 33% 98%;
+    --foreground: 215 35% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 35% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 35% 12%;
+
+    /* Deep navy — primary brand */
+    --primary: 212 52% 18%;
+    --primary-foreground: 40 33% 97%;
+
+    /* Slate secondary */
+    --secondary: 215 25% 95%;
+    --secondary-foreground: 215 35% 18%;
+
+    --muted: 215 25% 94%;
+    --muted-foreground: 215 14% 44%;
+
+    /* Muted teal accent */
+    --accent: 188 38% 90%;
+    --accent-foreground: 195 60% 20%;
+
+    --destructive: 0 72% 46%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 25% 90%;
+    --input: 215 25% 88%;
+    --ring: 199 64% 38%;
+
+    /* Status ramp */
+    --status-submitted: 215 25% 55%;
+    --status-pickup: 43 86% 56%;
+    --status-atlaundry: 24 80% 52%;
+    --status-inwash: 199 64% 42%;
+    --status-ready: 142 52% 38%;
+    --status-delivered: 215 16% 60%;
+
+    /* Chart palette (navy / teal / amber / sage / slate) */
+    --chart-1: 212 52% 28%;
+    --chart-2: 188 42% 40%;
+    --chart-3: 36 78% 52%;
+    --chart-4: 142 38% 46%;
+    --chart-5: 215 16% 60%;
+
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 212 40% 8%;
+    --foreground: 40 20% 92%;
+    --card: 212 38% 11%;
+    --card-foreground: 40 20% 92%;
+    --popover: 212 38% 11%;
+    --popover-foreground: 40 20% 92%;
+    --primary: 199 64% 45%;
+    --primary-foreground: 212 52% 10%;
+    --secondary: 212 24% 18%;
+    --secondary-foreground: 40 20% 92%;
+    --muted: 212 24% 18%;
+    --muted-foreground: 215 14% 62%;
+    --accent: 188 30% 20%;
+    --accent-foreground: 188 40% 80%;
+    --destructive: 0 62% 42%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 212 24% 22%;
+    --input: 212 24% 24%;
+    --ring: 199 64% 50%;
+    --status-submitted: 215 25% 65%;
+    --status-pickup: 43 80% 60%;
+    --status-atlaundry: 24 75% 58%;
+    --status-inwash: 199 64% 52%;
+    --status-ready: 142 52% 52%;
+    --status-delivered: 215 16% 68%;
+    --chart-1: 199 64% 45%;
+    --chart-2: 188 42% 50%;
+    --chart-3: 36 78% 58%;
+    --chart-4: 142 38% 52%;
+    --chart-5: 215 16% 68%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    display: block;
+    min-height: 100vh;
+    margin: 0;
+    place-items: initial;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Fraunces', 'Inter', Georgia, serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Fraunces', 'Inter', Georgia, serif;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.5) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .shadow-soft {
+    box-shadow: 0 1px 2px hsl(215 35% 12% / 0.04), 0 8px 24px hsl(215 35% 12% / 0.06);
+  }
+  .shadow-card {
+    box-shadow: 0 1px 3px hsl(215 35% 12% / 0.05), 0 12px 32px hsl(215 35% 12% / 0.08);
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted-foreground) / 0.15) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 hsl(var(--status-pickup) / 0.45); }
+  70% { box-shadow: 0 0 0 10px hsl(var(--status-pickup) / 0); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--status-pickup) / 0); }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 2s infinite;
+}
