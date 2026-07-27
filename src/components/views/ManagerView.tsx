@@ -98,12 +98,12 @@ export function ManagerView() {
   }, [data.bags]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      <header className="sticky top-0 z-20 border-b border-border/60 bg-background/80 backdrop-blur-md">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-20 border-b border-foreground/10 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3">
           <Brand />
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <BarChart3 className="h-4 w-4" />
+          <div className="flex items-center gap-2 font-mono-tag text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <BarChart3 className="h-4 w-4 text-primary" />
             Manager Dashboard
           </div>
         </div>
@@ -112,7 +112,8 @@ export function ManagerView() {
       <div className="mx-auto max-w-7xl px-5 py-6">
         <div className="mb-5 flex items-end justify-between">
           <div>
-            <h1 className="font-display text-2xl font-semibold">Operations Overview</h1>
+            <p className="font-mono-tag text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Operations</p>
+            <h1 className="font-display text-2xl font-bold uppercase tracking-tight">Operations Overview</h1>
             <p className="text-sm text-muted-foreground">Real-time laundry workflow, turnaround, and floor status.</p>
           </div>
         </div>
@@ -140,9 +141,9 @@ export function ManagerView() {
             )}
 
             <div className="grid gap-4 lg:grid-cols-3">
-              <Card className="lg:col-span-2 border-border/70 shadow-soft">
+              <Card className="lg:col-span-2 border-foreground/10 shadow-card">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Throughput</CardTitle>
+                  <CardTitle className="font-display text-base font-bold uppercase tracking-tight">Throughput</CardTitle>
                   <CardDescription>Bags submitted per day (last 7)</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -164,9 +165,9 @@ export function ManagerView() {
                 </CardContent>
               </Card>
 
-              <Card className="border-border/70 shadow-soft">
+              <Card className="border-foreground/10 shadow-card">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Pipeline by stage</CardTitle>
+                  <CardTitle className="font-display text-base font-bold uppercase tracking-tight">Pipeline by stage</CardTitle>
                   <CardDescription>Current bags per status</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -195,9 +196,9 @@ export function ManagerView() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-3">
-              <Card className="border-border/70 shadow-soft">
+              <Card className="border-foreground/10 shadow-card">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Busiest days</CardTitle>
+                  <CardTitle className="font-display text-base font-bold uppercase tracking-tight">Busiest days</CardTitle>
                   <CardDescription>Bags by weekday</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -213,9 +214,9 @@ export function ManagerView() {
                 </CardContent>
               </Card>
 
-              <Card className="border-border/70 shadow-soft">
+              <Card className="border-foreground/10 shadow-card">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Most common items</CardTitle>
+                  <CardTitle className="font-display text-base font-bold uppercase tracking-tight">Most common items</CardTitle>
                   <CardDescription>Top item types washed</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -243,9 +244,9 @@ export function ManagerView() {
                 </CardContent>
               </Card>
 
-              <Card className="border-border/70 shadow-soft">
+              <Card className="border-foreground/10 shadow-card">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Recent activity</CardTitle>
+                  <CardTitle className="font-display text-base font-bold uppercase tracking-tight">Recent activity</CardTitle>
                   <CardDescription>Latest workflow events</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -285,7 +286,7 @@ const tooltipStyle = {
   background: 'hsl(var(--popover))',
   color: 'hsl(var(--popover-foreground))',
   fontSize: 12,
-  boxShadow: '0 8px 24px hsl(215 35% 12% / 0.08)',
+  boxShadow: '0 8px 24px rgba(17, 17, 17, 0.12)',
 };
 
 function Kpi({ icon, label, value, sub, tone }: { icon: React.ReactNode; label: string; value: string; sub: string; tone: 'ready' | 'inwash' | 'atlaundry' | 'pickup' }) {
@@ -296,14 +297,14 @@ function Kpi({ icon, label, value, sub, tone }: { icon: React.ReactNode; label: 
     pickup: 'text-status-pickup bg-status-pickup/10',
   }[tone];
   return (
-    <Card className="border-border/70 shadow-soft">
+    <Card className="border-foreground/10 shadow-card">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">{label}</span>
+          <span className="font-mono-tag text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
           <span className={`grid h-7 w-7 place-items-center rounded-lg ${toneCls}`}>{icon}</span>
         </div>
-        <p className="mt-2 font-display text-2xl font-semibold tabular-nums">{value}</p>
-        <p className="text-xs text-muted-foreground">{sub}</p>
+        <p className="mt-2 font-display text-2xl font-bold tabular-nums">{value}</p>
+        <p className="font-mono-tag text-[10px] uppercase tracking-wider text-muted-foreground">{sub}</p>
       </CardContent>
     </Card>
   );
@@ -327,10 +328,10 @@ function RoomsPanel() {
   const roomUrl = qrRoom ? bagRoomUrl(qrRoom) : '';
 
   return (
-    <Card className="border-border/70 shadow-soft">
+    <Card className="border-foreground/10 shadow-card">
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div>
-          <CardTitle className="text-base">Room & QR Management</CardTitle>
+          <CardTitle className="font-display text-base font-bold uppercase tracking-tight">Room & QR Management</CardTitle>
           <CardDescription>{data.rooms.length} rooms across the property</CardDescription>
         </div>
         <Input
@@ -390,7 +391,7 @@ function RoomsPanel() {
             <DialogDescription>Guests scan this to open the laundry request page for their room.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-3 py-2">
-            <div className="rounded-2xl border border-border bg-white p-3 text-primary shadow-soft">
+            <div className="rounded-2xl border border-foreground/10 bg-white p-3 text-primary shadow-soft">
               <QrCode value={roomUrl} size={180} />
             </div>
             <div className="w-full break-all rounded-lg bg-muted px-3 py-2 text-center text-xs text-muted-foreground">{roomUrl}</div>
@@ -427,10 +428,10 @@ function StaffPanel() {
   };
 
   return (
-    <Card className="border-border/70 shadow-soft">
+    <Card className="border-foreground/10 shadow-card">
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div>
-          <CardTitle className="text-base">Staff Management</CardTitle>
+          <CardTitle className="font-display text-base font-bold uppercase tracking-tight">Staff Management</CardTitle>
           <CardDescription>{data.staff.length} accounts · {data.staff.filter((s) => s.active).length} active</CardDescription>
         </div>
         <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Add staff</Button>

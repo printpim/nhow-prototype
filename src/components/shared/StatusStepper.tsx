@@ -50,14 +50,14 @@ export function StatusStepper({
                     <div
                       className={cn(
                         'absolute right-1/2 top-3 h-0.5 w-full',
-                        i <= currentIndex ? 'bg-primary' : 'bg-border',
+                        i <= currentIndex ? 'bg-brand-gradient' : 'bg-border',
                       )}
                     />
                   )}
                   <div
                     className={cn(
                       'relative z-10 flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-offset-2 ring-offset-background transition-all',
-                      done && 'bg-primary text-primary-foreground ring-primary/30',
+                      done ? 'bg-brand-gradient text-white ring-primary/30' :
                       active && cn('bg-background', ringTone[meta.tone]),
                       upcoming && 'bg-background text-muted-foreground ring-border',
                     )}
@@ -95,14 +95,14 @@ export function StatusStepper({
               <div
                 className={cn(
                   'absolute left-[11px] top-7 h-[calc(100%-12px)] w-0.5',
-                  done ? 'bg-primary/40' : 'bg-border',
+                  done ? 'bg-brand-gradient' : 'bg-border',
                 )}
               />
             )}
             <div
               className={cn(
                 'relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ring-2 ring-offset-2 ring-offset-background transition-all',
-                done && 'bg-primary text-primary-foreground ring-primary/30',
+                done && 'bg-brand-gradient text-white ring-primary/30',
                 active && cn('bg-background', ringTone[meta.tone]),
                 upcoming && 'bg-background text-muted-foreground ring-border',
               )}

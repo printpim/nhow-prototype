@@ -23,14 +23,12 @@ function Shell() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
 
-  // React to URL changes (e.g. QR link opened).
   useEffect(() => {
     const onPop = () => setRoomParam(getRoomParam());
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  // If a room param is present, force the guest view regardless of role.
   const effectiveRole = roomParam ? 'guest' : role;
 
   const validRoom = useMemo(
@@ -40,9 +38,7 @@ function Shell() {
 
   const openRoom = () => {
     const num = roomInput.trim();
-    if (!data.rooms.some((r) => r.number === num)) {
-      return;
-    }
+    if (!data.rooms.some((r) => r.number === num)) return;
     const url = new URL(window.location.href);
     url.searchParams.set('room', num);
     window.history.pushState({}, '', url.toString());
@@ -59,11 +55,18 @@ function Shell() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Role switcher — visible everywhere for testing */}
+    <div className="relative min-h-screen bg-background">
+      {/* Ambient gradient backdrop */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 -top-32 h-[420px] w-[420px] rounded-full bg-primary/20 blur-[120px]" />
+        <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-secondary/20 blur-[120px]" />
+        <div className="absolute bottom-0 left-1/3 h-[320px] w-[320px] rounded-full bg-accent/15 blur-[120px]" />
+      </div>
+
+      {/* Top bar */}
       {!roomParam && (
-        <div className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/85 backdrop-blur-md">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
+        <header className="sticky top-0 z-40 w-full border-b border-foreground/10 bg-background/80 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5">
             <Brand compact={false} />
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setPickerOpen(true)}>
@@ -75,12 +78,12 @@ function Shell() {
               <RoleSwitcher />
             </div>
           </div>
-        </div>
+        </header>
       )}
 
       {roomParam && (
         <div className="flex items-center justify-between gap-2 border-b border-status-inwash/20 bg-status-inwash/[0.06] px-4 py-1.5 text-xs">
-          <span className="flex items-center gap-1.5 text-status-inwash">
+          <span className="flex items-center gap-1.5 font-mono-tag uppercase tracking-wider text-status-inwash">
             <Link2 className="h-3.5 w-3.5" /> Guest session · Room {roomParam}
           </span>
           <button onClick={exitGuest} className="flex items-center gap-1 font-medium text-foreground/70 hover:text-foreground">
@@ -95,21 +98,21 @@ function Shell() {
           <div className="grid h-16 w-16 place-items-center rounded-2xl bg-muted text-muted-foreground">
             <Building2 className="h-8 w-8" />
           </div>
-          <h1 className="mt-4 font-display text-xl font-semibold">Room not found</h1>
+          <h1 className="mt-4 font-display text-xl font-bold uppercase tracking-tight">Room not found</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             We could not find room <span className="font-semibold">#{roomParam}</span>. Scan a valid room QR code or open a room below.
           </p>
-          <Button className="mt-4" onClick={() => { setPickerOpen(true); }}>
+          <Button className="mt-4" onClick={() => setPickerOpen(true)}>
             <QrIcon className="h-4 w-4" /> Open a room
           </Button>
         </div>
       )}
       {effectiveRole === 'guest' && !roomParam && (
         <div className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-6 text-center">
-          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-primary/10 text-primary">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-brand-gradient text-white shadow-glow">
             <QrIcon className="h-8 w-8" />
           </div>
-          <h1 className="mt-4 font-display text-2xl font-semibold">Guest laundry access</h1>
+          <h1 className="mt-4 font-display text-2xl font-bold uppercase tracking-tight">Guest laundry access</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Guests reach this view by scanning the QR code in their room. Pick a room to preview the guest experience.
           </p>
@@ -123,7 +126,6 @@ function Shell() {
       {effectiveRole === 'laundry' && <LaundryView />}
       {effectiveRole === 'manager' && <ManagerView />}
 
-      {/* Room picker */}
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -142,8 +144,8 @@ function Shell() {
               {data.rooms.slice(0, 8).map((r) => (
                 <button
                   key={r.number}
-                  onClick={() => { setRoomInput(r.number); }}
-                  className="rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium hover:bg-accent"
+                  onClick={() => setRoomInput(r.number)}
+                  className="rounded-md border border-foreground/10 bg-card px-2.5 py-1 font-mono-tag text-xs font-medium hover:border-primary hover:text-primary"
                 >
                   {r.number}
                 </button>
@@ -157,7 +159,6 @@ function Shell() {
         </DialogContent>
       </Dialog>
 
-      {/* Reset confirmation */}
       <Dialog open={resetOpen} onOpenChange={setResetOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

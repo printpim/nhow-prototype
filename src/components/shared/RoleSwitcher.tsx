@@ -1,4 +1,4 @@
-import { Hotel, Bell, WashingMachine, BarChart3, UserRound, ChevronDown } from 'lucide-react';
+import { Bell, WashingMachine, BarChart3, UserRound, ChevronDown, Hotel } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { Role } from '@/lib/types';
@@ -14,13 +14,13 @@ const ROLE_ICONS: Record<Role, typeof Hotel> = {
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-        <Hotel className="h-5 w-5" strokeWidth={2.2} />
+      <div className="grid h-9 w-9 place-items-center rounded-lg bg-brand-gradient text-white shadow-glow">
+        <Hotel className="h-5 w-5" strokeWidth={2.4} />
       </div>
       {!compact && (
         <div className="leading-tight">
-          <div className="font-display text-[15px] font-semibold tracking-tight">LinenLoop</div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Laundry Ops</div>
+          <div className="font-display text-[15px] font-bold uppercase tracking-tight">nhow<span className="text-brand-gradient">.</span>laundry</div>
+          <div className="font-mono-tag text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Linen Ops · v2</div>
         </div>
       )}
     </div>
@@ -40,13 +40,13 @@ export function RoleSwitcher() {
         onClick={() => setOpen((v) => !v)}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
         className={cn(
-          'flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium shadow-sm transition',
-          'hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring',
+          'flex items-center gap-2 rounded-lg border border-foreground/10 bg-card px-3 py-1.5 text-xs font-semibold shadow-sm transition',
+          'hover:border-primary/40 hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring',
         )}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className="flex items-center gap-1.5 rounded-md bg-primary/8 px-2 py-0.5 text-primary">
+        <span className="flex items-center gap-1.5 rounded-md bg-brand-gradient px-2 py-0.5 text-white">
           <CurrentIcon className="h-3.5 w-3.5" />
           <span className="capitalize">{role}</span>
         </span>
@@ -56,9 +56,9 @@ export function RoleSwitcher() {
       {open && (
         <div
           role="listbox"
-          className="absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-xl border border-border bg-popover p-1.5 shadow-card animate-fade-up"
+          className="absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-xl border border-foreground/10 bg-popover p-1.5 shadow-card animate-fade-up"
         >
-          <p className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="px-2.5 py-1.5 font-mono-tag text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Switch role view
           </p>
           {(['guest', 'reception', 'laundry', 'manager'] as Role[]).map((r) => {
@@ -80,7 +80,7 @@ export function RoleSwitcher() {
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="flex-1 capitalize font-medium">{r}</span>
+                <span className="flex-1 font-semibold capitalize">{r}</span>
                 {active && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
               </button>
             );

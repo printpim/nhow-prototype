@@ -55,15 +55,15 @@ export function LaundryView() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="checkin" className="gap-1.5">
               <PackageSearch className="h-3.5 w-3.5" /> Check-in
-              {checkinBags.length > 0 && <span className="ml-1 rounded-full bg-status-atlaundry/20 px-1.5 text-[10px] font-bold text-status-atlaundry">{checkinBags.length}</span>}
+              {checkinBags.length > 0 && <span className="ml-1 rounded-full bg-status-atlaundry/20 px-1.5 font-mono-tag text-[10px] font-bold text-status-atlaundry">{checkinBags.length}</span>}
             </TabsTrigger>
             <TabsTrigger value="wash" className="gap-1.5">
               <WashingMachine className="h-3.5 w-3.5" /> In Wash
-              {washBags.length > 0 && <span className="ml-1 rounded-full bg-status-inwash/20 px-1.5 text-[10px] font-bold text-status-inwash">{washBags.length}</span>}
+              {washBags.length > 0 && <span className="ml-1 rounded-full bg-status-inwash/20 px-1.5 font-mono-tag text-[10px] font-bold text-status-inwash">{washBags.length}</span>}
             </TabsTrigger>
             <TabsTrigger value="delivery" className="gap-1.5">
               <DoorOpen className="h-3.5 w-3.5" /> Deliver
-              {deliveryBags.length > 0 && <span className="ml-1 rounded-full bg-status-ready/20 px-1.5 text-[10px] font-bold text-status-ready">{deliveryBags.length}</span>}
+              {deliveryBags.length > 0 && <span className="ml-1 rounded-full bg-status-ready/20 px-1.5 font-mono-tag text-[10px] font-bold text-status-ready">{deliveryBags.length}</span>}
             </TabsTrigger>
           </TabsList>
 
@@ -123,12 +123,12 @@ function SummaryTile({ icon, label, count, tone }: { icon: React.ReactNode; labe
     ready: 'text-status-ready bg-status-ready/10',
   }[tone];
   return (
-    <Card className="border-border/70 shadow-soft">
+    <Card className="border-foreground/10 shadow-card">
       <CardContent className="flex items-center gap-2.5 p-3.5">
         <div className={`grid h-9 w-9 place-items-center rounded-lg ${toneCls}`}>{icon}</div>
         <div className="leading-tight">
-          <p className="font-display text-2xl font-semibold tabular-nums">{count}</p>
-          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="font-display text-2xl font-bold tabular-nums">{count}</p>
+          <p className="font-mono-tag text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
         </div>
       </CardContent>
     </Card>
@@ -137,9 +137,9 @@ function SummaryTile({ icon, label, count, tone }: { icon: React.ReactNode; labe
 
 function EmptyStateCard({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-foreground/15 bg-muted/20 px-6 py-12 text-center">
       <div className="grid h-14 w-14 place-items-center rounded-full bg-muted text-muted-foreground">{icon}</div>
-      <p className="mt-3 font-medium">{title}</p>
+      <p className="mt-3 font-semibold">{title}</p>
       <p className="text-sm text-muted-foreground">{subtitle}</p>
     </div>
   );
@@ -149,10 +149,10 @@ function ItemChips({ bag }: { bag: Bag }) {
   return (
     <div className="mt-3 flex flex-wrap gap-1.5">
       {bag.items.map((i) => (
-        <span key={i.itemId} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium">
+        <span key={i.itemId} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 font-mono-tag text-[10px] font-medium uppercase tracking-wider">
           <ItemIcon id={i.itemId} className="h-3 w-3 text-muted-foreground" />
           {ITEM_MAP[i.itemId]?.label ?? i.itemId} ×{i.qty}
-          <span className="text-muted-foreground">· {SERVICE_LABEL[i.service]}</span>
+          <span className="text-muted-foreground/70">· {SERVICE_LABEL[i.service]}</span>
         </span>
       ))}
     </div>
@@ -162,15 +162,15 @@ function ItemChips({ bag }: { bag: Bag }) {
 function CheckinCard({ bag, onOpen }: { bag: Bag; onOpen: () => void }) {
   const count = totalItemCount(bag.items);
   return (
-    <Card className="border-border/70 shadow-soft transition hover:shadow-card">
+    <Card className="border-foreground/10 shadow-card transition hover:shadow-glow">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-display text-base font-semibold leading-tight">Room {bag.roomNumber}</p>
+              <p className="font-display text-base font-bold uppercase leading-tight tracking-tight">Room {bag.roomNumber}</p>
               <StatusBadge status={bag.status} />
             </div>
-            <p className="text-xs text-muted-foreground">{bag.guestName} · {count} items · arrived {formatTimeAgo(bag.timeline.at_laundry)}</p>
+            <p className="font-mono-tag text-xs text-muted-foreground">{bag.guestName} · {count} items · arrived {formatTimeAgo(bag.timeline.at_laundry)}</p>
           </div>
         </div>
         <ItemChips bag={bag} />
@@ -185,16 +185,16 @@ function CheckinCard({ bag, onOpen }: { bag: Bag; onOpen: () => void }) {
 function WashCard({ bag, onComplete }: { bag: Bag; onComplete: () => void }) {
   const count = totalItemCount(bag.items);
   return (
-    <Card className="border-status-inwash/30 bg-status-inwash/[0.03] shadow-soft">
+    <Card className="border-status-inwash/30 bg-status-inwash/[0.04] shadow-card">
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-display text-base font-semibold leading-tight">Room {bag.roomNumber}</p>
+              <p className="font-display text-base font-bold uppercase leading-tight tracking-tight">Room {bag.roomNumber}</p>
               <StatusBadge status={bag.status} />
             </div>
-            <p className="text-xs text-muted-foreground">{bag.guestName} · {count} items</p>
-            <p className="mt-1 flex items-center gap-1 text-[11px] text-status-inwash">
+            <p className="font-mono-tag text-xs text-muted-foreground">{bag.guestName} · {count} items</p>
+            <p className="mt-1 flex items-center gap-1 font-mono-tag text-[10px] uppercase tracking-wider text-status-inwash">
               <WashingMachine className="h-3 w-3" /> In wash since {formatTimeAgo(bag.timeline.in_wash)}
             </p>
           </div>
@@ -210,16 +210,16 @@ function WashCard({ bag, onComplete }: { bag: Bag; onComplete: () => void }) {
 function DeliveryCard({ bag, onDeliver }: { bag: Bag; onDeliver: () => void }) {
   const count = totalItemCount(bag.items);
   return (
-    <Card className="border-status-ready/30 bg-status-ready/[0.03] shadow-soft">
+    <Card className="border-status-ready/30 bg-status-ready/[0.04] shadow-card">
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-display text-base font-semibold leading-tight">Room {bag.roomNumber}</p>
+              <p className="font-display text-base font-bold uppercase leading-tight tracking-tight">Room {bag.roomNumber}</p>
               <StatusBadge status={bag.status} />
             </div>
-            <p className="text-xs text-muted-foreground">{bag.guestName} · {count} items</p>
-            <p className="mt-1 flex items-center gap-1 text-[11px] text-status-ready">
+            <p className="font-mono-tag text-xs text-muted-foreground">{bag.guestName} · {count} items</p>
+            <p className="mt-1 flex items-center gap-1 font-mono-tag text-[10px] uppercase tracking-wider text-status-ready">
               <Bell className="h-3 w-3" /> Ready since {formatTimeAgo(bag.timeline.ready)}
             </p>
           </div>
@@ -239,7 +239,6 @@ function CheckinDialog({ bag, onClose }: { bag: Bag | null; onClose: () => void 
   const open = !!bag;
   const bagItems = bag?.items ?? [];
 
-  // Reset verification counts whenever a different bag is opened.
   useEffect(() => {
     if (!bag) return;
     const c: Record<string, number> = {};
@@ -274,7 +273,7 @@ function CheckinDialog({ bag, onClose }: { bag: Bag | null; onClose: () => void 
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 font-display uppercase tracking-tight">
             <PackageSearch className="h-4 w-4 text-primary" /> Check-in · Room {bag?.roomNumber}
           </DialogTitle>
           <DialogDescription>Count each item as you check it. Counts that differ from the guest log will be flagged and used for the payment receipt.</DialogDescription>
@@ -288,18 +287,18 @@ function CheckinDialog({ bag, onClose }: { bag: Bag | null; onClose: () => void 
               const match = actual === expected;
               const washable = ITEM_MAP[i.itemId]?.washable ?? true;
               return (
-                <div key={i.itemId} className={`rounded-xl border p-3 transition ${match ? 'border-status-ready/40 bg-status-ready/[0.05]' : 'border-border bg-card'}`}>
+                <div key={i.itemId} className={`rounded-xl border p-3 transition ${match ? 'border-status-delivered/40 bg-status-delivered/[0.05]' : 'border-foreground/10 bg-card'}`}>
                   <div className="flex items-center gap-3">
                     <div className="grid h-9 w-9 place-items-center rounded-lg bg-muted text-muted-foreground">
                       <ItemIcon id={i.itemId} className="h-4 w-4" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium leading-tight">{ITEM_MAP[i.itemId]?.label ?? i.itemId}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm font-semibold leading-tight">{ITEM_MAP[i.itemId]?.label ?? i.itemId}</p>
+                      <p className="font-mono-tag text-[10px] uppercase tracking-wider text-muted-foreground">
                         Guest logged: {expected} · {SERVICE_LABEL[i.service]}
                       </p>
                       {!washable && (
-                        <p className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+                        <p className="mt-0.5 flex items-center gap-1 font-mono-tag text-[10px] uppercase tracking-wider text-muted-foreground">
                           <Info className="h-3 w-3" /> Linen — handled by linen service, not washed here
                         </p>
                       )}
@@ -308,23 +307,23 @@ function CheckinDialog({ bag, onClose }: { bag: Bag | null; onClose: () => void 
                       <Button size="icon" variant="outline" className="h-7 w-7 rounded-full" onClick={() => setQty(i.itemId, actual - 1)} disabled={actual === 0}>
                         <Minus className="h-3 w-3" />
                       </Button>
-                      <span className="w-5 text-center text-sm font-semibold tabular-nums">{actual}</span>
+                      <span className="w-5 text-center font-mono-tag text-sm font-bold tabular-nums">{actual}</span>
                       <Button size="icon" className="h-7 w-7 rounded-full" onClick={() => setQty(i.itemId, actual + 1)} disabled={actual >= 20}>
                         <Plus className="h-3 w-3" />
                       </Button>
                     </div>
-                    {match && <CheckCircle2 className="h-4 w-4 text-status-ready" />}
+                    {match && <CheckCircle2 className="h-4 w-4 text-status-delivered" />}
                   </div>
                 </div>
               );
             })}
 
             {hasDiscrepancy && (
-              <div className="flex items-start gap-2 rounded-lg border border-status-atlaundry/30 bg-status-atlaundry/10 p-2.5 text-xs text-status-atlaundry">
+              <div className="flex items-start gap-2 rounded-lg border border-secondary/30 bg-secondary/10 p-2.5 text-xs text-secondary">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <div>
-                  <p className="font-medium">Counts differ from the guest log.</p>
-                  <p className="text-status-atlaundry/80">You can still verify and start the wash. The guest will be notified, and your verified counts will be used for the payment receipt.</p>
+                  <p className="font-semibold">Counts differ from the guest log.</p>
+                  <p className="text-secondary/80">You can still verify and start the wash. The guest will be notified, and your verified counts will be used for the payment receipt.</p>
                 </div>
               </div>
             )}
