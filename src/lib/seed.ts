@@ -1,4 +1,4 @@
-import type { AppData, Bag, BagStatus, Room, StaffAccount } from './types';
+import type { AppData, Bag, BagItem, BagStatus, Room, ServiceType, StaffAccount } from './types';
 
 const ROOM_NUMBERS = [
   '101', '102', '103', '104', '105', '106',
@@ -14,9 +14,9 @@ const GUEST_NAMES = [
 ];
 
 const STAFF_SEED: Omit<StaffAccount, 'createdAt'>[] = [
-  { id: 'st-maria', name: 'Maria Santos', role: 'housekeeping', email: 'maria.santos@hotel.io', phone: '+1 202 555 0142', active: true },
-  { id: 'st-liang', name: 'Liang Wei', role: 'housekeeping', email: 'liang.wei@hotel.io', phone: '+1 202 555 0188', active: true },
-  { id: 'st-priya', name: 'Priya Nair', role: 'housekeeping', email: 'priya.nair@hotel.io', phone: '+1 202 555 0173', active: true },
+  { id: 'st-maria', name: 'Maria Santos', role: 'reception', email: 'maria.santos@hotel.io', phone: '+1 202 555 0142', active: true },
+  { id: 'st-liang', name: 'Liang Wei', role: 'reception', email: 'liang.wei@hotel.io', phone: '+1 202 555 0188', active: true },
+  { id: 'st-priya', name: 'Priya Nair', role: 'reception', email: 'priya.nair@hotel.io', phone: '+1 202 555 0173', active: true },
   { id: 'st-omar', name: 'Omar Haddad', role: 'laundry', email: 'omar.haddad@hotel.io', phone: '+1 202 555 0119', active: true },
   { id: 'st-greta', name: 'Greta Lindholm', role: 'laundry', email: 'greta.lindholm@hotel.io', phone: '+1 202 555 0156', active: true },
   { id: 'st-devon', name: 'Devon Booker', role: 'laundry', email: 'devon.booker@hotel.io', phone: '+1 202 555 0167', active: false },
@@ -64,12 +64,13 @@ function buildBag(
 ): Bag {
   const itemPool = ['shirt', 'pants', 'dress', 'tshirt', 'underwear', 'socks', 'towel', 'bedsheet', 'pillowcase', 'jacket'];
   const count = 1 + rand(i + 3, 4);
-  const items = Array.from({ length: count }, (_, k) => {
+  const items: BagItem[] = Array.from({ length: count }, (_, k) => {
     const id = pick(itemPool, i + k * 3);
-    return { itemId: id, qty: 1 + rand(i + k + 7, 4) };
+    const svc: ServiceType = id === 'jacket' || id === 'dress' ? (rand(i + k, 2) ? 'dryclean' : 'wash') : 'wash';
+    return { itemId: id, qty: 1 + rand(i + k + 7, 4), service: svc };
   });
 
-  const housekeepingStaff = staff.filter((s) => s.role === 'housekeeping');
+  const receptionStaff = staff.filter((s) => s.role === 'reception');
   const laundryStaff = staff.filter((s) => s.role === 'laundry');
   const timeline = buildTimeline(startTs, status);
 
@@ -85,10 +86,10 @@ function buildBag(
     verifiedItems: verified ? Object.fromEntries(items.map((it) => [it.itemId, it.qty])) : {},
     verified,
     staffIds: {
-      pickedUpBy: status !== 'submitted' && status !== 'pickup' ? pick(housekeepingStaff, i).id : undefined,
+      receivedBy: status !== 'submitted' && status !== 'pickup' ? pick(receptionStaff, i).id : undefined,
       verifiedBy: verified ? pick(laundryStaff, i).id : undefined,
       washedBy: ['ready', 'delivered'].includes(status) ? pick(laundryStaff, i + 2).id : undefined,
-      deliveredBy: status === 'delivered' ? pick(housekeepingStaff, i + 1).id : undefined,
+      deliveredBy: status === 'delivered' ? pick(laundryStaff, i + 1).id : undefined,
     },
   };
 }
@@ -141,6 +142,6 @@ export function buildSeedData(): AppData {
     rooms,
     staff,
     audit: [],
-    version: 1,
+    version: 2,
   };
 }

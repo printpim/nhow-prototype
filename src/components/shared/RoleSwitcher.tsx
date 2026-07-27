@@ -1,4 +1,4 @@
-import { Hotel, Shirt, WashingMachine, BarChart3, UserRound, ChevronDown } from 'lucide-react';
+import { Hotel, Bell, WashingMachine, BarChart3, UserRound, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { Role } from '@/lib/types';
@@ -6,7 +6,7 @@ import { useStore } from '@/lib/store';
 
 const ROLE_ICONS: Record<Role, typeof Hotel> = {
   guest: UserRound,
-  housekeeping: Shirt,
+  reception: Bell,
   laundry: WashingMachine,
   manager: BarChart3,
 };
@@ -61,7 +61,7 @@ export function RoleSwitcher() {
           <p className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Switch role view
           </p>
-          {(['guest', 'housekeeping', 'laundry', 'manager'] as Role[]).map((r) => {
+          {(['guest', 'reception', 'laundry', 'manager'] as Role[]).map((r) => {
             const Icon = ROLE_ICONS[r];
             const active = r === role;
             return (

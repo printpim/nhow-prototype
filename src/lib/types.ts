@@ -1,8 +1,10 @@
 // Domain types for LinenLoop hotel laundry workflow.
 
-export type Role = 'guest' | 'housekeeping' | 'laundry' | 'manager';
+export type Role = 'guest' | 'reception' | 'laundry' | 'manager';
 
-export type StaffRole = 'housekeeping' | 'laundry';
+export type StaffRole = 'reception' | 'laundry';
+
+export type ServiceType = 'wash' | 'dryclean';
 
 export type BagStatus =
   | 'submitted'
@@ -19,11 +21,14 @@ export interface LaundryItemDef {
   icon: string;
   /** est. processing weight factor for stats */
   weight: number;
+  /** whether the laundry station washes this item (linen is handled separately) */
+  washable: boolean;
 }
 
 export interface BagItem {
   itemId: string;
   qty: number;
+  service: ServiceType;
 }
 
 export interface Bag {
@@ -38,9 +43,13 @@ export interface Bag {
   /** per-item qty confirmed by laundry staff during check-in */
   verifiedItems: Record<string, number>;
   verified: boolean;
+  /** true when laundry confirmed counts that differ from the guest log */
+  discrepancy?: boolean;
+  /** guest has been notified of the discrepancy */
+  discrepancyNotified?: boolean;
   note?: string;
   staffIds: {
-    pickedUpBy?: string;
+    receivedBy?: string;
     verifiedBy?: string;
     washedBy?: string;
     deliveredBy?: string;

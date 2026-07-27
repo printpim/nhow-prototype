@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   BarChart3,
   BedDouble,
+  Bell,
   CheckCircle2,
   Download,
   Layers,
@@ -54,6 +55,7 @@ export function ManagerView() {
 
   const delivered = data.bags.filter((b) => b.status === 'delivered');
   const active = data.bags.filter((b) => b.status !== 'delivered');
+  const discrepancies = data.bags.filter((b) => b.discrepancy).length;
 
   const avgTurnaround = useMemo(() => {
     const times = delivered.map((b) => turnaroundMs(b)).filter(Boolean);
@@ -129,6 +131,13 @@ export function ManagerView() {
               <Kpi icon={<Layers className="h-4 w-4" />} label="Active in pipeline" value={active.length.toString()} sub={`${pipeline.filter((p) => p.count).length} stages live`} tone="atlaundry" />
               <Kpi icon={<Shirt className="h-4 w-4" />} label="Items washed" value={delivered.reduce((a, b) => a + totalItemCount(b.items), 0).toString()} sub="across all bags" tone="pickup" />
             </div>
+
+            {discrepancies > 0 && (
+              <div className="flex items-center gap-2 rounded-xl border border-status-atlaundry/30 bg-status-atlaundry/10 px-4 py-2.5 text-sm text-status-atlaundry">
+                <Bell className="h-4 w-4 shrink-0" />
+                <span><span className="font-semibold">{discrepancies}</span> bag{discrepancies === 1 ? '' : 's'} flagged with an item count discrepancy — verified counts will be used for the payment receipt.</span>
+              </div>
+            )}
 
             <div className="grid gap-4 lg:grid-cols-3">
               <Card className="lg:col-span-2 border-border/70 shadow-soft">
@@ -404,7 +413,7 @@ function StaffPanel() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<'housekeeping' | 'laundry'>('housekeeping');
+  const [role, setRole] = useState<'reception' | 'laundry'>('reception');
 
   const submit = () => {
     if (!name.trim() || !email.trim()) {
@@ -413,7 +422,7 @@ function StaffPanel() {
     }
     addStaff({ name: name.trim(), email: email.trim(), phone: phone.trim() || undefined, role, active: true });
     toast.success('Staff member added', { description: `${name} added as ${role}.` });
-    setName(''); setEmail(''); setPhone(''); setRole('housekeeping');
+    setName(''); setEmail(''); setPhone(''); setRole('reception');
     setOpen(false);
   };
 
@@ -442,7 +451,7 @@ function StaffPanel() {
               <TableRow key={s.id}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2.5">
-                    <div className={`grid h-8 w-8 place-items-center rounded-full text-xs font-semibold ${s.role === 'housekeeping' ? 'bg-status-pickup/15 text-status-pickup' : 'bg-status-inwash/15 text-status-inwash'}`}>
+                    <div className={`grid h-8 w-8 place-items-center rounded-full text-xs font-semibold ${s.role === 'reception' ? 'bg-status-pickup/15 text-status-pickup' : 'bg-status-inwash/15 text-status-inwash'}`}>
                       {s.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
                     </div>
                     <div>
@@ -453,7 +462,7 @@ function StaffPanel() {
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="capitalize gap-1.5">
-                    {s.role === 'housekeeping' ? <Shirt className="h-3 w-3" /> : <WashingMachine className="h-3 w-3" />}
+                    {s.role === 'reception' ? <Bell className="h-3 w-3" /> : <WashingMachine className="h-3 w-3" />}
                     {s.role}
                   </Badge>
                 </TableCell>
@@ -489,7 +498,7 @@ function StaffPanel() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add staff member</DialogTitle>
-            <DialogDescription>Create a mock account for housekeeping or laundry staff.</DialogDescription>
+            <DialogDescription>Create a mock account for reception or laundry staff.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -506,10 +515,10 @@ function StaffPanel() {
             </div>
             <div className="space-y-1.5">
               <Label>Role</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as 'housekeeping' | 'laundry')}>
+              <Select value={role} onValueChange={(v) => setRole(v as 'reception' | 'laundry')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="housekeeping">Housekeeping</SelectItem>
+                  <SelectItem value="reception">Reception</SelectItem>
                   <SelectItem value="laundry">Laundry</SelectItem>
                 </SelectContent>
               </Select>

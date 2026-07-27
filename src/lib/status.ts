@@ -14,6 +14,8 @@ export interface StatusMeta {
 }
 
 // Linear, strictly-ordered workflow.
+// Reception collects the bag dropped off by the guest and sends it to laundry.
+// Laundry verifies, washes, and delivers the clean bag back to the room.
 export const STATUS_FLOW: BagStatus[] = [
   'submitted',
   'pickup',
@@ -28,21 +30,21 @@ export const STATUS_META: Record<BagStatus, StatusMeta> = {
     key: 'submitted',
     label: 'Request Submitted',
     short: 'Submitted',
-    description: 'Guest has prepared the laundry bag in their room.',
-    action: 'Ready for Pickup',
+    description: 'Guest has logged their laundry and dropped the bag at reception.',
+    action: 'Confirm Drop-off',
     responsible: 'guest',
     tone: 'submitted',
     icon: 'clipboard-list',
   },
   pickup: {
     key: 'pickup',
-    label: 'Ready for Pickup',
-    short: 'Pickup',
-    description: 'Awaiting housekeeping to collect the bag from the room.',
-    action: 'Mark as Picked Up',
-    responsible: 'housekeeping',
+    label: 'At Reception',
+    short: 'At Reception',
+    description: 'Bag dropped at reception; awaiting check-in and transfer to the laundry.',
+    action: 'Checked In & Sent to Laundry',
+    responsible: 'reception',
     tone: 'pickup',
-    icon: 'hand',
+    icon: 'bell',
   },
   at_laundry: {
     key: 'at_laundry',
@@ -68,9 +70,9 @@ export const STATUS_META: Record<BagStatus, StatusMeta> = {
     key: 'ready',
     label: 'Ready for Return',
     short: 'Ready',
-    description: 'Clean and folded; awaiting delivery back to the room.',
+    description: 'Clean and folded; awaiting delivery back to the room by laundry staff.',
     action: 'Mark Delivered to Room',
-    responsible: 'housekeeping',
+    responsible: 'laundry',
     tone: 'ready',
     icon: 'sparkles',
   },
@@ -78,9 +80,9 @@ export const STATUS_META: Record<BagStatus, StatusMeta> = {
     key: 'delivered',
     label: 'Delivered',
     short: 'Delivered',
-    description: 'Bag returned to the guest. Workflow complete.',
+    description: 'Bag returned to the guest by laundry staff. Workflow complete.',
     action: '',
-    responsible: 'housekeeping',
+    responsible: 'laundry',
     tone: 'delivered',
     icon: 'check-circle',
   },
@@ -151,7 +153,7 @@ export function formatDateTime(ts: number): string {
 
 export const ROLES: { key: Role; label: string; description: string }[] = [
   { key: 'guest', label: 'Guest', description: 'Submit & track laundry' },
-  { key: 'housekeeping', label: 'Housekeeping', description: 'Pickups & deliveries' },
-  { key: 'laundry', label: 'Laundry', description: 'Verify & wash' },
+  { key: 'reception', label: 'Reception', description: 'Check in & send to laundry' },
+  { key: 'laundry', label: 'Laundry', description: 'Verify, wash & deliver' },
   { key: 'manager', label: 'Manager', description: 'Analytics & ops' },
 ];

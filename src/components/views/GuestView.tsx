@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, CheckCircle2, ClipboardList, Clock, Hand, Minus, Plus, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ClipboardList, Clock, Droplets, Hand, Info, Minus, Plus, Shirt, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useStore } from '@/lib/store';
-import { LAUNDRY_ITEMS } from '@/lib/items';
-import type { BagItem } from '@/lib/types';
+import { LAUNDRY_ITEMS, ITEM_MAP, SERVICE_LABEL, totalItemCount } from '@/lib/items';
+import type { BagItem, ServiceType } from '@/lib/types';
 import { ItemIcon } from '@/components/shared/ItemIcon';
 import { StatusStepper } from '@/components/shared/StatusStepper';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -24,6 +24,7 @@ export function GuestView({ roomNumber }: { roomNumber: string }) {
     .slice(0, 3);
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [services, setServices] = useState<Record<string, ServiceType>>({});
   const [guestName, setGuestName] = useState(room?.guestName ?? '');
   const [note, setNote] = useState('');
 
@@ -33,10 +34,14 @@ export function GuestView({ roomNumber }: { roomNumber: string }) {
   const setQty = (id: string, qty: number) =>
     setQuantities((q) => ({ ...q, [id]: Math.max(0, Math.min(20, qty)) }));
 
+  const setService = (id: string, svc: ServiceType) =>
+    setServices((s) => ({ ...s, [id]: svc }));
+
   const submit = () => {
     const items: BagItem[] = LAUNDRY_ITEMS.filter((i) => (quantities[i.id] ?? 0) > 0).map((i) => ({
       itemId: i.id,
       qty: quantities[i.id],
+      service: services[i.id] ?? 'wash',
     }));
     if (items.length === 0) {
       toast.error('Add at least one item', { description: 'Select the items you are putting in your laundry bag.' });
@@ -45,9 +50,10 @@ export function GuestView({ roomNumber }: { roomNumber: string }) {
     const name = guestName.trim() || room?.guestName || `Room ${roomNumber}`;
     createBag(roomNumber, items, name, note.trim() || undefined);
     setQuantities({});
+    setServices({});
     setNote('');
-    toast.success('Pickup requested', {
-      description: `${items.reduce((a, b) => a + b.qty, 0)} items logged. Housekeeping will collect your bag shortly.`,
+    toast.success('Laundry logged', {
+      description: `${items.reduce((a, b) => a + b.qty, 0)} items logged. Drop your bag at reception to start the process.`,
     });
   };
 
@@ -90,41 +96,58 @@ export function GuestView({ roomNumber }: { roomNumber: string }) {
               <CardContent className="space-y-2 pt-0">
                 {LAUNDRY_ITEMS.map((item) => {
                   const qty = quantities[item.id] ?? 0;
+                  const svc = services[item.id] ?? 'wash';
                   return (
                     <div
                       key={item.id}
-                      className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition ${
+                      className={`rounded-xl border px-3 py-2.5 transition ${
                         qty > 0 ? 'border-primary/30 bg-primary/[0.04]' : 'border-border/60 bg-card hover:bg-muted/40'
                       }`}
                     >
-                      <div className={`grid h-9 w-9 place-items-center rounded-lg ${qty > 0 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                        <ItemIcon id={item.id} className="h-4 w-4" />
+                      <div className="flex items-center gap-3">
+                        <div className={`grid h-9 w-9 place-items-center rounded-lg ${qty > 0 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                          <ItemIcon id={item.id} className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium leading-tight">{item.label}</p>
+                          {!item.washable && (
+                            <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <Info className="h-3 w-3" /> Linen — handled by linen service
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => setQty(item.id, qty - 1)}
+                            disabled={qty === 0}
+                            aria-label={`Decrease ${item.label}`}
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </Button>
+                          <span className="w-6 text-center text-sm font-semibold tabular-nums">{qty}</span>
+                          <Button
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => setQty(item.id, qty + 1)}
+                            disabled={qty >= 20}
+                            aria-label={`Increase ${item.label}`}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium leading-tight">{item.label}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8 rounded-full"
-                          onClick={() => setQty(item.id, qty - 1)}
-                          disabled={qty === 0}
-                          aria-label={`Decrease ${item.label}`}
-                        >
-                          <Minus className="h-3.5 w-3.5" />
-                        </Button>
-                        <span className="w-6 text-center text-sm font-semibold tabular-nums">{qty}</span>
-                        <Button
-                          size="icon"
-                          className="h-8 w-8 rounded-full"
-                          onClick={() => setQty(item.id, qty + 1)}
-                          disabled={qty >= 20}
-                          aria-label={`Increase ${item.label}`}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      {qty > 0 && (
+                        <div className="mt-2.5 flex items-center gap-1.5 pl-12">
+                          <ServiceToggle
+                            value={svc}
+                            onChange={(v) => setService(item.id, v)}
+                            disabled={!item.washable && false}
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -153,11 +176,11 @@ export function GuestView({ roomNumber }: { roomNumber: string }) {
                 onClick={submit}
               >
                 <Hand className="h-4 w-4" />
-                Ready for Pickup
+                Drop Off at Reception
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
-                Housekeeping is notified instantly. Track your bag below.
+                Log your items, then drop the bag at reception. Track every step below.
               </p>
             </div>
 
@@ -169,7 +192,7 @@ export function GuestView({ roomNumber }: { roomNumber: string }) {
                     <div key={b.id} className="flex items-center justify-between rounded-lg border border-border/60 bg-card px-3 py-2 text-sm">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-status-ready" />
-                        <span>{b.items.reduce((a, i) => a + i.qty, 0)} items</span>
+                        <span>{totalItemCount(b.items)} items</span>
                       </div>
                       <span className="text-xs text-muted-foreground">{formatTimeAgo(b.timeline.delivered)}</span>
                     </div>
@@ -180,6 +203,34 @@ export function GuestView({ roomNumber }: { roomNumber: string }) {
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+function ServiceToggle({ value, onChange, disabled }: { value: ServiceType; onChange: (v: ServiceType) => void; disabled?: boolean }) {
+  const opts: { key: ServiceType; label: string; icon: typeof Shirt }[] = [
+    { key: 'wash', label: 'Wash', icon: Droplets },
+    { key: 'dryclean', label: 'Dry clean', icon: Shirt },
+  ];
+  return (
+    <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
+      {opts.map((o) => {
+        const active = value === o.key;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(o.key)}
+            className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition ${
+              active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <o.icon className="h-3 w-3" />
+            {o.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -198,7 +249,7 @@ function Hero({
       <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary-foreground/70">Welcome</p>
       <h2 className="mt-1 font-display text-2xl font-semibold leading-tight">Laundry, made effortless.</h2>
       <p className="mt-1.5 text-sm text-primary-foreground/80">
-        Log what is in your laundry bag and we will handle pickup, washing, and return — track every step in real time.
+        Log what is in your laundry bag, drop it at reception, and we will handle washing and return — track every step in real time.
       </p>
       <div className="mt-4">
         <label className="text-[11px] uppercase tracking-wide text-primary-foreground/70">Guest name</label>
@@ -222,6 +273,7 @@ function ActiveTracker({ roomNumber }: { roomNumber: string }) {
   const bag = activeBagForRoom(roomNumber)!;
   const pct = progressPct(bag.status);
   const isSubmitted = bag.status === 'submitted';
+  const hasDiscrepancy = bag.discrepancy && bag.discrepancyNotified;
 
   return (
     <div className="space-y-5">
@@ -254,19 +306,55 @@ function ActiveTracker({ roomNumber }: { roomNumber: string }) {
               <div className="flex items-start gap-2.5">
                 <Clock className="mt-0.5 h-4 w-4 text-status-pickup" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-status-pickup">Confirm pickup readiness</p>
-                  <p className="text-xs text-muted-foreground">Place your bag outside the door and confirm it is ready to collect.</p>
+                  <p className="text-sm font-medium text-status-pickup">Drop off at reception</p>
+                  <p className="text-xs text-muted-foreground">Take your bag to the reception desk and let them know it is ready.</p>
                 </div>
               </div>
               <Button
                 className="mt-3 w-full bg-status-pickup text-white hover:bg-status-pickup/90"
                 onClick={() => {
                   advance(bag.id);
-                  toast.success('Pickup queued', { description: 'Housekeeping has been notified your bag is ready.' });
+                  toast.success('Logged at reception', { description: 'Reception has been notified your bag is on its way.' });
                 }}
               >
-                <Hand className="h-4 w-4" /> Bag is ready for pickup
+                <Hand className="h-4 w-4" /> I have dropped it at reception
               </Button>
+            </div>
+          )}
+
+          {hasDiscrepancy && (
+            <div className="mt-4 rounded-xl border border-status-atlaundry/30 bg-status-atlaundry/10 p-3">
+              <div className="flex items-start gap-2.5">
+                <Info className="mt-0.5 h-4 w-4 text-status-atlaundry" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-status-atlaundry">Item count updated</p>
+                  <p className="text-xs text-muted-foreground">
+                    The laundry team counted different quantities than you logged. The verified counts below will be used for your payment receipt.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2.5 space-y-1 rounded-lg bg-background/60 p-2.5">
+                {bag.items.map((i) => {
+                  const verified = bag.verifiedItems[i.itemId] ?? 0;
+                  const mismatch = verified !== i.qty;
+                  return (
+                    <div key={i.itemId} className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{ITEM_MAP[i.itemId]?.label ?? i.itemId}</span>
+                      <span className={mismatch ? 'font-semibold text-status-atlaundry' : 'tabular-nums'}>
+                        {mismatch ? (
+                          <>
+                            <span className="line-through text-muted-foreground">{i.qty}</span>
+                            <span className="mx-1">→</span>
+                            {verified}
+                          </>
+                        ) : (
+                          `×${verified}`
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -286,7 +374,10 @@ function ActiveTracker({ roomNumber }: { roomNumber: string }) {
         <CardContent className="space-y-1.5 pt-0">
           {bag.items.map((i) => (
             <div key={i.itemId} className="flex items-center justify-between py-1 text-sm">
-              <span className="text-muted-foreground">{i.itemId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
+              <span className="text-muted-foreground">
+                {ITEM_MAP[i.itemId]?.label ?? i.itemId}
+                <span className="ml-1.5 text-[11px] text-muted-foreground/70">· {SERVICE_LABEL[i.service]}</span>
+              </span>
               <span className="font-medium tabular-nums">×{i.qty}</span>
             </div>
           ))}

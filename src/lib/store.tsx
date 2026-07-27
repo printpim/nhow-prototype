@@ -60,6 +60,7 @@ interface StoreValue {
   advance: (bagId: string) => void;
   setBagStatus: (bagId: string, status: BagStatus) => void;
   verifyItems: (bagId: string, verified: Record<string, number>) => void;
+  notifyDiscrepancy: (bagId: string) => void;
   resetAll: () => void;
   addStaff: (s: Omit<StaffAccount, 'id' | 'createdAt'>) => void;
   updateStaff: (id: string, patch: Partial<StaffAccount>) => void;
@@ -157,15 +158,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const updater = (b: Bag): Bag => {
         const next = stampTimeline(b, status);
         const staffIds = { ...b.staffIds };
-        if (status === 'pickup' || status === 'delivered') staffIds.deliveredBy = currentStaffId;
-        if (status === 'pickup') staffIds.pickedUpBy = currentStaffId;
+        if (status === 'pickup') staffIds.receivedBy = currentStaffId;
         if (status === 'delivered') staffIds.deliveredBy = currentStaffId;
         return { ...next, staffIds };
       };
       const bags = d.bags.map((b) => (b.id === bagId ? updater(b) : b));
       const actor =
         status === 'submitted' ? bag.guestName :
-        status === 'delivered' ? staffName(bag.staffIds.deliveredBy ?? currentStaffId) :
+        status === 'delivered' ? staffName(currentStaffId) :
         staffName(currentStaffId);
       return pushAudit({ ...d, bags }, {
         bagId,
@@ -185,18 +185,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const meta = STATUS_META[nxt];
       const updated = stampTimeline(bag, nxt);
       const staffIds = { ...updated.staffIds };
-      if (nxt === 'pickup') staffIds.pickedUpBy = currentStaffId;
-      if (nxt === 'at_laundry') staffIds.pickedUpBy = staffIds.pickedUpBy ?? currentStaffId;
+      if (nxt === 'pickup') staffIds.receivedBy = currentStaffId;
+      if (nxt === 'at_laundry') staffIds.receivedBy = staffIds.receivedBy ?? currentStaffId;
       if (nxt === 'in_wash') staffIds.verifiedBy = currentStaffId;
       if (nxt === 'ready') staffIds.washedBy = currentStaffId;
       if (nxt === 'delivered') staffIds.deliveredBy = currentStaffId;
       const bags = d.bags.map((b) => (b.id === bagId ? { ...updated, staffIds } : b));
-      const actor = nxt === 'delivered' ? staffName(currentStaffId) : staffName(currentStaffId);
       return pushAudit({ ...d, bags }, {
         bagId,
         roomNumber: bag.roomNumber,
         action: meta.label,
-        staffName: actor,
+        staffName: staffName(currentStaffId),
       });
     });
   }, [currentStaffId, pushAudit]);
@@ -205,13 +204,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setData((d) => {
       const bag = d.bags.find((b) => b.id === bagId);
       if (!bag) return d;
+      // Detect any mismatch between guest log and verified counts.
+      const discrepancy = bag.items.some((i) => (verified[i.itemId] ?? 0) !== i.qty);
       const bags = d.bags.map((b) =>
-        b.id === bagId ? { ...b, verifiedItems: verified, verified: true } : b,
+        b.id === bagId ? { ...b, verifiedItems: verified, verified: true, discrepancy, discrepancyNotified: false } : b,
       );
       return pushAudit({ ...d, bags }, {
         bagId,
         roomNumber: bag.roomNumber,
-        action: 'Items verified',
+        action: discrepancy ? 'Items verified (discrepancy)' : 'Items verified',
+        staffName: staffName(currentStaffId),
+      });
+    });
+  }, [currentStaffId, pushAudit]);
+
+  const notifyDiscrepancy = useCallback<StoreValue['notifyDiscrepancy']>((bagId) => {
+    setData((d) => {
+      const bag = d.bags.find((b) => b.id === bagId);
+      if (!bag) return d;
+      const bags = d.bags.map((b) => (b.id === bagId ? { ...b, discrepancyNotified: true } : b));
+      return pushAudit({ ...d, bags }, {
+        bagId,
+        roomNumber: bag.roomNumber,
+        action: 'Guest notified of discrepancy',
         staffName: staffName(currentStaffId),
       });
     });
@@ -268,6 +283,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     advance,
     setBagStatus,
     verifyItems,
+    notifyDiscrepancy,
     resetAll,
     addStaff,
     updateStaff,

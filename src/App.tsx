@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Brand, RoleSwitcher } from '@/components/shared/RoleSwitcher';
 import { GuestView } from '@/components/views/GuestView';
-import { HousekeepingView } from '@/components/views/HousekeepingView';
+import { ReceptionView } from '@/components/views/ReceptionView';
 import { LaundryView } from '@/components/views/LaundryView';
 import { ManagerView } from '@/components/views/ManagerView';
 
@@ -119,7 +119,7 @@ function Shell() {
         </div>
       )}
 
-      {effectiveRole === 'housekeeping' && <HousekeepingView />}
+      {effectiveRole === 'reception' && <ReceptionView />}
       {effectiveRole === 'laundry' && <LaundryView />}
       {effectiveRole === 'manager' && <ManagerView />}
 
