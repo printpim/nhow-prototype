@@ -39,29 +39,35 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useStore, bagRoomUrl } from '@/lib/store';
-import type { BagStatus } from '@/lib/types';
-import { ITEM_MAP, totalItemCount } from '@/lib/items';
+import type { BagStatus, StaffLaundryOrder } from '@/lib/types';
+import { ITEM_MAP, totalItemCount, STAFF_UNIFORM_ITEMS } from '@/lib/items';
 import { STATUS_FLOW, STATUS_META, formatDuration, turnaroundMs, formatDateTime } from '@/lib/status';
 import { QrCode } from '@/components/shared/QrCode';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { StaffStatusBadge } from '@/components/shared/StaffStatusBadge';
 import { Brand } from '@/components/shared/RoleSwitcher';
 import { toast } from 'sonner';
 
 const CHART_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
+type ScopeFilter = 'all' | 'guest' | 'staff';
+
 export function ManagerView() {
   const { data } = useStore();
   const [tab, setTab] = useState<'overview' | 'rooms' | 'staff'>('overview');
+  const [scope, setScope] = useState<ScopeFilter>('all');
 
-  const delivered = data.bags.filter((b) => b.status === 'delivered');
-  const active = data.bags.filter((b) => b.status !== 'delivered');
+  const deliveredGuest = data.bags.filter((b) => b.status === 'delivered');
+  const activeGuest = data.bags.filter((b) => b.status !== 'delivered');
+  const collectedStaff = data.staffOrders.filter((o) => o.status === 'collected');
+  const activeStaff = data.staffOrders.filter((o) => o.status !== 'collected');
   const discrepancies = data.bags.filter((b) => b.discrepancy).length;
 
   const avgTurnaround = useMemo(() => {
-    const times = delivered.map((b) => turnaroundMs(b)).filter(Boolean);
+    const times = deliveredGuest.map((b) => turnaroundMs(b)).filter(Boolean);
     if (!times.length) return 0;
     return Math.round(times.reduce((a, b) => a + b, 0) / times.length);
-  }, [delivered]);
+  }, [deliveredGuest]);
 
   const busiestDays = useMemo(() => {
     const map: Record<string, number> = {};
@@ -76,11 +82,16 @@ export function ManagerView() {
   const itemMix = useMemo(() => {
     const map: Record<string, number> = {};
     data.bags.forEach((b) => b.items.forEach((i) => (map[i.itemId] = (map[i.itemId] ?? 0) + i.qty)));
+    data.staffOrders.forEach((o) => {
+      Object.entries(o.items).forEach(([k, v]) => {
+        if (v > 0) map[k] = (map[k] ?? 0) + v;
+      });
+    });
     return Object.entries(map)
-      .map(([id, qty]) => ({ id, name: ITEM_MAP[id]?.label ?? id, qty }))
+      .map(([id, qty]) => ({ id, name: ITEM_MAP[id]?.label ?? STAFF_UNIFORM_ITEMS.find((i) => i.key === id)?.label ?? id, qty }))
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 6);
-  }, [data.bags]);
+  }, [data.bags, data.staffOrders]);
 
   const throughput = useMemo(() => {
     const map: Record<string, number> = {};
@@ -96,6 +107,15 @@ export function ManagerView() {
   const pipeline = useMemo(() => {
     return STATUS_FLOW.map((s) => ({ status: s, count: data.bags.filter((b) => b.status === s).length }));
   }, [data.bags]);
+
+  // Items washed totals, scoped by filter.
+  const guestItemsWashed = deliveredGuest.reduce((a, b) => a + totalItemCount(b.items), 0);
+  const staffItemsWashed = collectedStaff.reduce((a, o) => a + o.totalQuantity, 0);
+  const itemsWashed = scope === 'guest' ? guestItemsWashed : scope === 'staff' ? staffItemsWashed : guestItemsWashed + staffItemsWashed;
+  const itemsWashedSub = scope === 'guest' ? 'guest items' : scope === 'staff' ? 'staff uniforms' : 'guest + staff';
+
+  const totalProcessed = scope === 'guest' ? deliveredGuest.length : scope === 'staff' ? collectedStaff.length : deliveredGuest.length + collectedStaff.length;
+  const activeInPipeline = scope === 'guest' ? activeGuest.length : scope === 'staff' ? activeStaff.length : activeGuest.length + activeStaff.length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,6 +136,7 @@ export function ManagerView() {
             <h1 className="font-display text-2xl font-bold uppercase tracking-tight">Operations Overview</h1>
             <p className="text-sm text-muted-foreground">Real-time laundry workflow, turnaround, and floor status.</p>
           </div>
+          <ScopeToggle value={scope} onChange={setScope} />
         </div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as 'overview' | 'rooms' | 'staff')}>
@@ -127,10 +148,10 @@ export function ManagerView() {
 
           <TabsContent value="overview" className="mt-5 space-y-5">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Kpi icon={<CheckCircle2 className="h-4 w-4" />} label="Bags processed" value={delivered.length.toString()} sub={`${data.bags.length} total`} tone="ready" />
-              <Kpi icon={<Timer className="h-4 w-4" />} label="Avg turnaround" value={formatDuration(avgTurnaround)} sub="submit → delivered" tone="inwash" />
-              <Kpi icon={<Layers className="h-4 w-4" />} label="Active in pipeline" value={active.length.toString()} sub={`${pipeline.filter((p) => p.count).length} stages live`} tone="atlaundry" />
-              <Kpi icon={<Shirt className="h-4 w-4" />} label="Items washed" value={delivered.reduce((a, b) => a + totalItemCount(b.items), 0).toString()} sub="across all bags" tone="pickup" />
+              <Kpi icon={<CheckCircle2 className="h-4 w-4" />} label="Orders processed" value={totalProcessed.toString()} sub={`${scope === 'all' ? data.bags.length + data.staffOrders.length : scope === 'guest' ? data.bags.length : data.staffOrders.length} total`} tone="ready" />
+              <Kpi icon={<Timer className="h-4 w-4" />} label="Avg turnaround" value={scope === 'staff' ? '—' : formatDuration(avgTurnaround)} sub="submit → delivered" tone="inwash" />
+              <Kpi icon={<Layers className="h-4 w-4" />} label="Active in pipeline" value={activeInPipeline.toString()} sub={`${pipeline.filter((p) => p.count).length} stages live`} tone="atlaundry" />
+              <Kpi icon={<Shirt className="h-4 w-4" />} label="Items washed" value={itemsWashed.toString()} sub={itemsWashedSub} tone="pickup" />
             </div>
 
             {discrepancies > 0 && (
@@ -168,7 +189,7 @@ export function ManagerView() {
               <Card className="border-foreground/10 shadow-card">
                 <CardHeader className="pb-2">
                   <CardTitle className="font-display text-base font-bold uppercase tracking-tight">Pipeline by stage</CardTitle>
-                  <CardDescription>Current bags per status</CardDescription>
+                  <CardDescription>Current guest bags per status</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2.5">
@@ -255,7 +276,7 @@ export function ManagerView() {
                       <li key={a.id} className="flex items-start gap-2.5 text-xs">
                         <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/50" />
                         <div className="flex-1">
-                          <p className="font-medium">{a.action} · Room {a.roomNumber}</p>
+                          <p className="font-medium">{a.action} · {a.roomNumber}</p>
                           <p className="text-muted-foreground">{a.staffName} · {formatDateTime(a.at)}</p>
                         </div>
                       </li>
@@ -271,11 +292,37 @@ export function ManagerView() {
             <RoomsPanel />
           </TabsContent>
 
-          <TabsContent value="staff" className="mt-5">
+          <TabsContent value="staff" className="mt-5 space-y-4">
             <StaffPanel />
+            <StaffLaundryPanel />
           </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+function ScopeToggle({ value, onChange }: { value: ScopeFilter; onChange: (v: ScopeFilter) => void }) {
+  const opts: { key: ScopeFilter; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'guest', label: 'Guest' },
+    { key: 'staff', label: 'Staff' },
+  ];
+  return (
+    <div className="inline-flex rounded-lg border border-foreground/10 bg-card p-0.5 shadow-sm">
+      {opts.map((o) => {
+        const active = value === o.key;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            onClick={() => onChange(o.key)}
+            className={`rounded-md px-3 py-1.5 font-mono-tag text-[11px] font-semibold uppercase tracking-wider transition ${active ? 'bg-brand-gradient text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -427,6 +474,13 @@ function StaffPanel() {
     setOpen(false);
   };
 
+  // Map staff name → current laundry status (most recent active staff order).
+  const staffLaundryStatus = (staffName: string): StaffLaundryOrder | undefined => {
+    return data.staffOrders
+      .filter((o) => o.staffName.toLowerCase() === staffName.toLowerCase() && o.status !== 'collected')
+      .sort((a, b) => b.dateTurnedIn - a.dateTurnedIn)[0];
+  };
+
   return (
     <Card className="border-foreground/10 shadow-card">
       <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -444,53 +498,78 @@ function StaffPanel() {
               <TableHead>Role</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Laundry</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.staff.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`grid h-8 w-8 place-items-center rounded-full text-xs font-semibold ${s.role === 'reception' ? 'bg-status-pickup/15 text-status-pickup' : 'bg-status-inwash/15 text-status-inwash'}`}>
-                      {s.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+            {data.staff.map((s) => {
+              const laundry = staffLaundryStatus(s.name);
+              return (
+                <TableRow key={s.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`grid h-8 w-8 place-items-center rounded-full text-xs font-semibold ${s.role === 'reception' ? 'bg-status-pickup/15 text-status-pickup' : 'bg-status-inwash/15 text-status-inwash'}`}>
+                        {s.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                      </div>
+                      <div>
+                        <div>{s.name}</div>
+                        {currentStaffId === s.id && <div className="text-[10px] font-medium text-primary">Signed in as</div>}
+                      </div>
                     </div>
-                    <div>
-                      <div>{s.name}</div>
-                      {currentStaffId === s.id && <div className="text-[10px] font-medium text-primary">Signed in as</div>}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize gap-1.5">
+                      {s.role === 'reception' ? <Bell className="h-3 w-3" /> : <WashingMachine className="h-3 w-3" />}
+                      {s.role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    <div>{s.email}</div>
+                    {s.phone && <div>{s.phone}</div>}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={s.active ? 'default' : 'secondary'} className={s.active ? 'bg-status-ready/15 text-status-ready border-status-ready/30' : ''}>
+                      {s.active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {laundry ? (
+                      <div className="flex items-center gap-1.5">
+                        {laundry.status === 'in_washing' ? (
+                          <span className="flex items-center gap-1 font-mono-tag text-[10px] uppercase tracking-wider text-status-inwash">
+                            <WashingMachine className="h-3.5 w-3.5" /> In wash
+                          </span>
+                        ) : laundry.status === 'in_storage' ? (
+                          <span className="flex items-center gap-1 font-mono-tag text-[10px] uppercase tracking-wider text-status-ready">
+                            <Shirt className="h-3.5 w-3.5" /> In storage
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 font-mono-tag text-[10px] uppercase tracking-wider text-muted-foreground">
+                            <Shirt className="h-3.5 w-3.5" /> Submitted
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="font-mono-tag text-[10px] uppercase tracking-wider text-muted-foreground/50">None</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1.5">
+                      <Button size="sm" variant="ghost" onClick={() => setCurrentStaffId(s.id)} disabled={currentStaffId === s.id}>
+                        <Users className="h-3.5 w-3.5" /> Sign in as
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => toggleStaffActive(s.id)}>
+                        {s.active ? 'Deactivate' : 'Activate'}
+                      </Button>
+                      <Button size="icon" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => removeStaff(s.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="capitalize gap-1.5">
-                    {s.role === 'reception' ? <Bell className="h-3 w-3" /> : <WashingMachine className="h-3 w-3" />}
-                    {s.role}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  <div>{s.email}</div>
-                  {s.phone && <div>{s.phone}</div>}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={s.active ? 'default' : 'secondary'} className={s.active ? 'bg-status-ready/15 text-status-ready border-status-ready/30' : ''}>
-                    {s.active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1.5">
-                    <Button size="sm" variant="ghost" onClick={() => setCurrentStaffId(s.id)} disabled={currentStaffId === s.id}>
-                      <Users className="h-3.5 w-3.5" /> Sign in as
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => toggleStaffActive(s.id)}>
-                      {s.active ? 'Deactivate' : 'Activate'}
-                    </Button>
-                    <Button size="icon" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => removeStaff(s.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>
@@ -531,6 +610,63 @@ function StaffPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </Card>
+  );
+}
+
+function StaffLaundryPanel() {
+  const { data } = useStore();
+  const orders = data.staffOrders;
+
+  return (
+    <Card className="border-foreground/10 shadow-card">
+      <CardHeader className="flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="flex items-center gap-2 font-display text-base font-bold uppercase tracking-tight">
+            <Shirt className="h-4 w-4 text-secondary" /> Staff Uniform Laundry
+          </CardTitle>
+          <CardDescription>{orders.length} staff orders · {orders.filter((o) => o.status !== 'collected').length} active</CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Staff</TableHead>
+              <TableHead>Department</TableHead>
+              <TableHead>Items</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Collected</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {orders.map((o) => (
+              <TableRow key={o.id}>
+                <TableCell className="font-medium">{o.staffName}</TableCell>
+                <TableCell className="text-muted-foreground">{o.department}</TableCell>
+                <TableCell className="tabular-nums">{o.totalQuantity}</TableCell>
+                <TableCell><StaffStatusBadge status={o.status} /></TableCell>
+                <TableCell>
+                  {o.status === 'collected' ? (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-status-delivered" />
+                      {o.collectedBy ?? o.staffName}
+                      {o.collectedAt && <span className="font-mono-tag text-[10px]">· {formatDateTime(o.collectedAt)}</span>}
+                    </div>
+                  ) : (
+                    <span className="font-mono-tag text-[10px] uppercase tracking-wider text-muted-foreground/50">—</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+            {orders.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">No staff uniform orders yet.</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
     </Card>
   );
 }

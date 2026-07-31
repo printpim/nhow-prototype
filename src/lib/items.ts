@@ -1,4 +1,4 @@
-import type { LaundryItemDef, ServiceType } from './types';
+import type { LaundryItemDef, ServiceType, StaffItemKey } from './types';
 
 // Catalog of launderable items the guest can request.
 // Linen items (bed sheets, towels, pillowcases) are handled by the linen
@@ -43,3 +43,37 @@ export const SERVICE_LABEL: Record<ServiceType, string> = {
   wash: 'Wash',
   dryclean: 'Dry clean',
 };
+
+// ---------------------------------------------------------------------------
+// Staff uniform laundry items
+// ---------------------------------------------------------------------------
+
+export const STAFF_UNIFORM_ITEMS: { key: StaffItemKey; label: string; icon: string }[] = [
+  { key: 'trousers', label: 'Trousers', icon: 'pants' },
+  { key: 'skirt', label: 'Skirt', icon: 'dress' },
+  { key: 'blazer', label: 'Blazer', icon: 'jacket' },
+  { key: 'blouseShirt', label: 'Blouse / Shirt', icon: 'shirt' },
+  { key: 'apron', label: 'Apron', icon: 'shirt' },
+  { key: 'tShirt', label: 'T-Shirt', icon: 'tshirt' },
+  { key: 'longSleeveTShirt', label: 'Long-Sleeve T-Shirt', icon: 'shirt' },
+  { key: 'sweater', label: 'Sweater', icon: 'shirt' },
+  { key: 'chefJacket', label: 'Chef Jacket', icon: 'jacket' },
+  { key: 'chefTrouser', label: 'Chef Trouser', icon: 'pants' },
+];
+
+export const EMPTY_STAFF_ITEMS: Record<StaffItemKey, number> = {
+  trousers: 0,
+  skirt: 0,
+  blazer: 0,
+  blouseShirt: 0,
+  apron: 0,
+  tShirt: 0,
+  longSleeveTShirt: 0,
+  sweater: 0,
+  chefJacket: 0,
+  chefTrouser: 0,
+};
+
+export function staffTotalQuantity(items: Record<StaffItemKey, number>): number {
+  return (Object.values(items) as number[]).reduce((a, b) => a + b, 0);
+}

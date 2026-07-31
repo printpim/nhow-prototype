@@ -10,6 +10,7 @@ import { GuestView } from '@/components/views/GuestView';
 import { ReceptionView } from '@/components/views/ReceptionView';
 import { LaundryView } from '@/components/views/LaundryView';
 import { ManagerView } from '@/components/views/ManagerView';
+import { StaffView } from '@/components/views/StaffView';
 
 function getRoomParam(): string | null {
   const url = new URL(window.location.href);
@@ -123,6 +124,7 @@ function Shell() {
       )}
 
       {effectiveRole === 'reception' && <ReceptionView />}
+      {effectiveRole === 'staff' && <StaffView />}
       {effectiveRole === 'laundry' && <LaundryView />}
       {effectiveRole === 'manager' && <ManagerView />}
 

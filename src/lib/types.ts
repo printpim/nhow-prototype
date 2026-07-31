@@ -1,6 +1,6 @@
 // Domain types for LinenLoop hotel laundry workflow.
 
-export type Role = 'guest' | 'reception' | 'laundry' | 'manager';
+export type Role = 'guest' | 'reception' | 'laundry' | 'manager' | 'staff';
 
 export type StaffRole = 'reception' | 'laundry';
 
@@ -83,10 +83,55 @@ export interface AuditEntry {
   at: number;
 }
 
+// ---------------------------------------------------------------------------
+// Staff uniform laundry workflow (parallel to the guest workflow)
+// ---------------------------------------------------------------------------
+
+/** Discriminates guest vs. staff laundry orders. */
+export type OrderType = 'GUEST' | 'STAFF';
+
+/** Staff workflow status machine. */
+export type StaffOrderStatus =
+  | 'submitted_laundry'
+  | 'in_washing'
+  | 'in_storage'
+  | 'collected';
+
+/** Uniform item keys for staff orders. */
+export type StaffItemKey =
+  | 'trousers'
+  | 'skirt'
+  | 'blazer'
+  | 'blouseShirt'
+  | 'apron'
+  | 'tShirt'
+  | 'longSleeveTShirt'
+  | 'sweater'
+  | 'chefJacket'
+  | 'chefTrouser';
+
+export type StaffItems = Record<StaffItemKey, number>;
+
+export interface StaffLaundryOrder {
+  id: string;
+  orderType: 'STAFF';
+  staffName: string;
+  department: string;
+  dateTurnedIn: number;
+  pickupSignatureUrl?: string;
+  status: StaffOrderStatus;
+  location: string;
+  items: StaffItems;
+  totalQuantity: number;
+  collectedBy?: string;
+  collectedAt?: number;
+}
+
 export interface AppData {
   bags: Bag[];
   rooms: Room[];
   staff: StaffAccount[];
   audit: AuditEntry[];
+  staffOrders: StaffLaundryOrder[];
   version: number;
 }

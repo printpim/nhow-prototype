@@ -1,4 +1,7 @@
-import type { AppData, Bag, BagItem, BagStatus, Room, ServiceType, StaffAccount } from './types';
+import type { AppData, Bag, BagItem, BagStatus, Room, ServiceType, StaffAccount, StaffLaundryOrder } from './types';
+import { EMPTY_STAFF_ITEMS } from './items';
+
+export const STAFF_LOCATION = 'nhow Amsterdam RAI, Europaboulevard 2b, 1078 RV AMSTERDAM';
 
 const ROOM_NUMBERS = [
   '101', '102', '103', '104', '105', '106',
@@ -137,11 +140,49 @@ export function buildSeedData(): AppData {
     bags.push(buildBag(200 + i, room, a.status, Date.now() - a.offsetMin * 60000, staff));
   });
 
+  // Mock staff uniform laundry orders across different states.
+  const staffOrders: StaffLaundryOrder[] = [
+    {
+      id: 'staff-1001',
+      orderType: 'STAFF',
+      staffName: 'Marco Bianchi',
+      department: 'Kitchen',
+      dateTurnedIn: Date.now() - 95 * 60000,
+      status: 'in_washing',
+      location: STAFF_LOCATION,
+      items: { ...EMPTY_STAFF_ITEMS, chefJacket: 3, chefTrouser: 3, apron: 2, tShirt: 2 },
+      totalQuantity: 10,
+    },
+    {
+      id: 'staff-1002',
+      orderType: 'STAFF',
+      staffName: 'Sofia Ramos',
+      department: 'Housekeeping',
+      dateTurnedIn: Date.now() - 240 * 60000,
+      status: 'in_storage',
+      location: STAFF_LOCATION,
+      items: { ...EMPTY_STAFF_ITEMS, blouseShirt: 4, trousers: 3, sweater: 1 },
+      totalQuantity: 8,
+    },
+    {
+      id: 'staff-1003',
+      orderType: 'STAFF',
+      staffName: 'Jamal Edwards',
+      department: 'Front Office',
+      dateTurnedIn: Date.now() - 320 * 60000,
+      status: 'in_storage',
+      location: STAFF_LOCATION,
+      items: { ...EMPTY_STAFF_ITEMS, blazer: 2, blouseShirt: 3, trousers: 2, longSleeveTShirt: 2 },
+      totalQuantity: 9,
+    },
+  ];
+
   return {
     bags,
     rooms,
     staff,
     audit: [],
+    staffOrders,
     version: 2,
   };
 }

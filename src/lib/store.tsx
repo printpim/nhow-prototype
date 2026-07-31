@@ -1,20 +1,33 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { AppData, Bag, BagItem, BagStatus, Role, StaffAccount } from './types';
+import type { AppData, Bag, BagItem, BagStatus, Role, StaffAccount, StaffItems, StaffLaundryOrder, StaffOrderStatus } from './types';
 import { buildSeedData } from './seed';
-import { nextStatus, STATUS_META } from './status';
+import { nextStatus, STATUS_META, nextStaffStatus, STAFF_STATUS_META } from './status';
+import { staffTotalQuantity } from './items';
+import { STAFF_LOCATION } from './seed';
 
 const STORAGE_KEY = 'linenloop.data.v1';
 const ROLE_KEY = 'linenloop.role.v1';
 const STAFF_SELF_KEY = 'linenloop.staffself.v1';
 
+function migrate(parsed: Partial<AppData>): AppData {
+  return {
+    bags: parsed.bags ?? [],
+    rooms: parsed.rooms ?? [],
+    staff: parsed.staff ?? [],
+    audit: parsed.audit ?? [],
+    staffOrders: parsed.staffOrders ?? [],
+    version: 2,
+  };
+}
+
 function load(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as AppData;
+      const parsed = JSON.parse(raw) as Partial<AppData>;
       if (parsed && Array.isArray(parsed.bags) && Array.isArray(parsed.rooms)) {
-        return parsed;
+        return migrate(parsed);
       }
     }
   } catch {
@@ -69,6 +82,12 @@ interface StoreValue {
   bagsByStatus: (status: BagStatus) => Bag[];
   bagsForRoom: (roomNumber: string) => Bag[];
   activeBagForRoom: (roomNumber: string) => Bag | undefined;
+  // Staff uniform laundry
+  createStaffOrder: (staffName: string, department: string, items: StaffItems) => StaffLaundryOrder;
+  advanceStaffOrder: (orderId: string) => void;
+  collectStaffOrder: (orderId: string, signatureUrl: string, collectedBy: string) => void;
+  activeStaffOrderFor: (staffName: string) => StaffLaundryOrder | undefined;
+  staffOrdersByStatus: (status: StaffOrderStatus) => StaffLaundryOrder[];
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -204,7 +223,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setData((d) => {
       const bag = d.bags.find((b) => b.id === bagId);
       if (!bag) return d;
-      // Detect any mismatch between guest log and verified counts.
       const discrepancy = bag.items.some((i) => (verified[i.itemId] ?? 0) !== i.qty);
       const bags = d.bags.map((b) =>
         b.id === bagId ? { ...b, verifiedItems: verified, verified: true, discrepancy, discrepancyNotified: false } : b,
@@ -270,6 +288,73 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [data.bags],
   );
 
+  // ----- Staff uniform laundry operations -----
+  const createStaffOrder = useCallback<StoreValue['createStaffOrder']>((staffNameStr, department, items) => {
+    const total = staffTotalQuantity(items);
+    const order: StaffLaundryOrder = {
+      id: uid('staff'),
+      orderType: 'STAFF',
+      staffName: staffNameStr,
+      department,
+      dateTurnedIn: Date.now(),
+      status: 'submitted_laundry',
+      location: STAFF_LOCATION,
+      items,
+      totalQuantity: total,
+    };
+    setData((d) => ({ ...d, staffOrders: [order, ...d.staffOrders] }));
+    return order;
+  }, []);
+
+  const advanceStaffOrder = useCallback<StoreValue['advanceStaffOrder']>((orderId) => {
+    setData((d) => {
+      const order = d.staffOrders.find((o) => o.id === orderId);
+      if (!order) return d;
+      const next = nextStaffStatus(order.status);
+      if (!next) return d;
+      const staffOrders = d.staffOrders.map((o) => (o.id === orderId ? { ...o, status: next } : o));
+      return pushAudit(
+        { ...d, staffOrders },
+        {
+          bagId: orderId,
+          roomNumber: order.department,
+          action: `Staff uniform → ${STAFF_STATUS_META[next].label}`,
+          staffName: staffName(currentStaffId),
+        },
+      );
+    });
+  }, [currentStaffId, pushAudit]);
+
+  const collectStaffOrder = useCallback<StoreValue['collectStaffOrder']>((orderId, signatureUrl, collectedBy) => {
+    setData((d) => {
+      const order = d.staffOrders.find((o) => o.id === orderId);
+      if (!order) return d;
+      const staffOrders = d.staffOrders.map((o) =>
+        o.id === orderId
+          ? { ...o, status: 'collected' as StaffOrderStatus, pickupSignatureUrl: signatureUrl, collectedBy, collectedAt: Date.now() }
+          : o,
+      );
+      return pushAudit(
+        { ...d, staffOrders },
+        {
+          bagId: orderId,
+          roomNumber: order.department,
+          action: 'Staff uniform collected (signature)',
+          staffName: collectedBy,
+        },
+      );
+    });
+  }, [pushAudit]);
+
+  const activeStaffOrderFor = useCallback(
+    (staffNameStr: string) => data.staffOrders.find((o) => o.staffName.toLowerCase() === staffNameStr.toLowerCase() && o.status !== 'collected'),
+    [data.staffOrders],
+  );
+  const staffOrdersByStatus = useCallback(
+    (status: StaffOrderStatus) => data.staffOrders.filter((o) => o.status === status),
+    [data.staffOrders],
+  );
+
   const currentStaff = useMemo(() => data.staff.find((s) => s.id === currentStaffId), [data.staff, currentStaffId]);
 
   const value: StoreValue = {
@@ -292,6 +377,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     bagsByStatus,
     bagsForRoom,
     activeBagForRoom,
+    createStaffOrder,
+    advanceStaffOrder,
+    collectStaffOrder,
+    activeStaffOrderFor,
+    staffOrdersByStatus,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

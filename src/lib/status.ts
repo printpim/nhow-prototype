@@ -1,4 +1,4 @@
-import type { BagStatus, Role } from './types';
+import type { BagStatus, Role, StaffOrderStatus } from './types';
 
 export interface StatusMeta {
   key: BagStatus;
@@ -153,7 +153,83 @@ export function formatDateTime(ts: number): string {
 
 export const ROLES: { key: Role; label: string; description: string }[] = [
   { key: 'guest', label: 'Guest', description: 'Submit & track laundry' },
+  { key: 'staff', label: 'Staff', description: 'Submit & collect uniform laundry' },
   { key: 'reception', label: 'Reception', description: 'Check in & send to laundry' },
   { key: 'laundry', label: 'Laundry', description: 'Verify, wash & deliver' },
   { key: 'manager', label: 'Manager', description: 'Analytics & ops' },
 ];
+
+// ---------------------------------------------------------------------------
+// Staff uniform laundry status flow
+// ---------------------------------------------------------------------------
+
+export const STAFF_STATUS_FLOW: StaffOrderStatus[] = [
+  'submitted_laundry',
+  'in_washing',
+  'in_storage',
+  'collected',
+];
+
+export interface StaffStatusMeta {
+  key: StaffOrderStatus;
+  label: string;
+  short: string;
+  description: string;
+  action: string;
+  tone: 'submitted' | 'inwash' | 'ready' | 'delivered';
+}
+
+export const STAFF_STATUS_META: Record<StaffOrderStatus, StaffStatusMeta> = {
+  submitted_laundry: {
+    key: 'submitted_laundry',
+    label: 'Dropped at Laundry',
+    short: 'Submitted',
+    description: 'Uniform dropped directly at the laundry station.',
+    action: 'Start Wash',
+    tone: 'submitted',
+  },
+  in_washing: {
+    key: 'in_washing',
+    label: 'In Washing',
+    short: 'In Wash',
+    description: 'Uniform currently being laundered.',
+    action: 'Store Uniform',
+    tone: 'inwash',
+  },
+  in_storage: {
+    key: 'in_storage',
+    label: 'In Storage — Ready for Pickup',
+    short: 'In Storage',
+    description: 'Clean uniform tagged with name, awaiting collection.',
+    action: 'Collect (Signature)',
+    tone: 'ready',
+  },
+  collected: {
+    key: 'collected',
+    label: 'Collected',
+    short: 'Collected',
+    description: 'Uniform collected by the staff member with a digital signature.',
+    action: '',
+    tone: 'delivered',
+  },
+};
+
+export function staffStatusIndex(status: StaffOrderStatus): number {
+  return STAFF_STATUS_FLOW.indexOf(status);
+}
+
+export function nextStaffStatus(status: StaffOrderStatus): StaffOrderStatus | null {
+  const i = staffStatusIndex(status);
+  if (i < 0 || i >= STAFF_STATUS_FLOW.length - 1) return null;
+  return STAFF_STATUS_FLOW[i + 1];
+}
+
+export function staffProgressPct(status: StaffOrderStatus): number {
+  const i = staffStatusIndex(status);
+  if (i < 0) return 0;
+  return Math.round(((i + 1) / STAFF_STATUS_FLOW.length) * 100);
+}
+
+export function isStaffTerminal(status: StaffOrderStatus): boolean {
+  return status === 'collected';
+}
