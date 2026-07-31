@@ -232,7 +232,7 @@ function StaffOrderTracker({ order }: { order: StaffLaundryOrder }) {
           {order.status === 'in_storage' && (
             <div className="mt-4 rounded-xl border border-status-ready/30 bg-status-ready/[0.06] p-3">
               <div className="flex items-start gap-2.5">
-                <Hanger className="mt-0.5 h-4 w-4 text-status-ready" />
+                <Shirt className="mt-0.5 h-4 w-4 text-status-ready" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-status-ready">Ready for pickup</p>
                   <p className="text-xs text-muted-foreground">Your clean uniform is tagged with your name. Visit the laundry station and sign to collect.</p>
